@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   minWidth="955" minHeight="600" applicationComplete="OnApplicationComplete()">
+	<fx:Script>
+		<![CDATA[
+		private var netConnection:NetConnection = null;
+		private var netStream:NetStream = null;
+		private var netGroup:NetGroup = null;
+		private var video:Video = null;
+		private var sequenceNumber:uint = 0;
+		private var resizeTimer:Timer = null;
+		
+		private const SERVER:String = "rtmfp://10.0.12.192:1935";
+		private const DEVKEY:String = "YourStratusDeveloperKey";
+		
+		[Bindable] private var connected:Boolean = false;
+		[Bindable] private var joinedGroup:Boolean = false;
+		
+		private function OnApplicationComplete():void
+		{
+			userName.text = "user " + int(Math.random() * 65536);
+			
+			groupName.text = "channel" + (int(Math.random() * 899) + 101);
+			
+			resizeTimer = new Timer(2000.0);
+			resizeTimer.addEventListener(TimerEvent.TIMER, DoResizeVideo);
+			resizeTimer.start();
+		}
+		
+		private function StatusMessage(msg:Object):void
+		{
+			statusLog.text += msg;
+			statusLog.verticalScrollPosition = statusLog.textHeight;
+			statusLog.validateNow();
+		}
+		
+		private function NetStatusHandler(e:NetStatusEvent):void
+		{
+			StatusMessage(e.info.code+"\n");
+			switch(e.info.code)
+			{
+				case "NetConnection.Connect.Success":
+				OnConnect();
+				break;
+				
+				case "NetConnection.Connect.Closed":
+				case "NetConnection.Connect.Failed":
+				case "NetConnection.Connect.Rejected":
+				case "NetConnection.Connect.AppShutdown":
+				case "NetConnection.Connect.InvalidApp":
+				OnDisconnect();
+				break;
+				
+				case "NetStream.Connect.Success": // e.info.stream
+				OnNetStreamConnect();
+				break;
+				
+				case "NetStream.Connect.Rejected": // e.info.stream
+				case "NetStream.Connect.Failed": // e.info.stream
+				DoDisconnect();
+				break;
+				
+				case "NetGroup.Connect.Success": // e.info.group
+				OnNetGroupConnect();
+				break;
+				
+				case "NetGroup.Connect.Rejected": // e.info.group
+				case "NetGroup.Connect.Failed": // e.info.group
+				DoDisconnect();
+				break;
+				
+				case "NetGroup.Posting.Notify": // e.info.message, e.info.messageID
+				OnPosting(e.info.message);
+				break;
+				
+				
+				case "NetStream.MulticastStream.Reset":
+				case "NetStream.Buffer.Full":
+				DoResizeVideo();
+				break;
+				
+				case "NetGroup.SendTo.Notify": // e.info.message, e.info.from, e.info.fromLocal
+				case "NetGroup.LocalCoverage.Notify": //
+				case "NetGroup.Neighbor.Connect": // e.info.neighbor
+				case "NetGroup.Neighbor.Disconnect": // e.info.neighbor
+				case "NetGroup.MulticastStream.PublishNotify": // e.info.name
+				case "NetGroup.MulticastStream.UnpublishNotify": // e.info.name
+				case "NetGroup.Replication.Fetch.SendNotify": // e.info.index
+				case "NetGroup.Replication.Fetch.Failed": // e.info.index
+				case "NetGroup.Replication.Fetch.Result": // e.info.index, e.info.object
+				case "NetGroup.Replication.Request": // e.info.index, e.info.requestID
+				default:
+				break;
+			}
+		}
+		
+		private function DoConnect():void
+		{
+		StatusMessage("Connecting to \"" + SERVER + "\" ...\n");
+		netConnection = new NetConnection();
+		netConnection.addEventListener(NetStatusEvent.NET_STATUS, NetStatusHandler);
+		netConnection.connect(SERVER);
+		}
+		
+		private function OnConnect():void
+		{
+		var groupSpecifier:GroupSpecifier;
+		
+		StatusMessage("Connected\n");
+		connected = true;
+		
+//		groupSpecifier = new GroupSpecifier("max2009lab/"+ groupName.text);
+//		groupSpecifier.multicastEnabled = true;
+//		groupSpecifier.postingEnabled = true;
+//		groupSpecifier.serverChannelEnabled = true;
+//		
+//		netGroup = new NetGroup(netConnection, groupSpecifier.groupspecWithAuthorizations());
+		var gs:GroupSpecifier = new GroupSpecifier("qw000/vmc007");
+		gs.postingEnabled = true;
+		gs.routingEnabled = true;
+		gs.serverChannelEnabled = true;
+		
+		StatusMessage("Connected1111"+gs.groupspecWithAuthorizations()+"\n");
+		netGroup = new NetGroup(netConnection, gs.groupspecWithAuthorizations());
+		StatusMessage("Connected1112\n");
+		netGroup.addEventListener(NetStatusEvent.NET_STATUS, NetStatusHandler);
+		StatusMessage("Connected1113\n");
+//		StatusMessage("Join \"" + groupSpecifier.groupspecWithAuthorizations() + "\"\n");
+//		StatusMessage("Connected1114\n");
+		}
+		
+		private function OnNetStreamConnect():void
+		{
+		netStream.client = this;
+		
+		var mic:Microphone = Microphone.getMicrophone();
+		if(mic)
+		{
+		mic.codec = SoundCodec.SPEEX;
+		mic.setSilenceLevel(0);
+		
+		netStream.attachAudio(mic);
+		
+		StatusMessage("got microphone\n");
+		}
+		
+		var camera:Camera = Camera.getCamera();
+		if(camera)
+		{
+		camera.setMode(320, 240, 10);
+		camera.setQuality(30000, 0);
+		camera.setKeyFrameInterval(15);
+		
+		videoDisplay.attachCamera(camera);
+		videoDisplay.maintainAspectRatio = true;
+		
+		netStream.attachCamera(camera);
+		
+		StatusMessage("got camera\n");
+		}
+		
+		netStream.publish("stream");
+		}
+		
+		private function OnNetGroupConnect():void
+		{
+		joinedGroup = true;
+		
+		netStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+		netStream.addEventListener(NetStatusEvent.NET_STATUS, NetStatusHandler);
+		
+		}
+		
+		private function DoDisconnect():void
+		{
+		if(netConnection)
+		netConnection.close();
+		videoDisplay.attachCamera(null);
+		}
+		
+		private function OnDisconnect():void
+		{
+		StatusMessage("Disconnected\n");
+		netConnection = null;
+		netStream = null;
+		netGroup = null;
+		connected = false;
+		joinedGroup = false;
+		}
+		
+		private function ClearChatText():void
+		{
+		chatText.text = "";
+		}
+		
+		private function DoPost():void
+		{
+		var message:Object = new Object;
+		
+		message.user = userName.text;
+		message.text = chatText.text;
+		message.sequence = sequenceNumber++;
+		message.sender = netConnection.nearID;
+		
+		netGroup.post(message);
+		
+		StatusMessage("==> " + chatText.text + "\n");
+		
+		chatText.callLater(ClearChatText);
+		}
+		
+		private function OnPosting(message:Object):void
+		{
+		StatusMessage("<" + message.user + "> " + message.text + "\n");
+		}
+		
+		private function DoResizeVideo(ignored:* = null):void
+		{
+//			StatusMessage("DoResizeVideo\n");
+		if(video)
+		{
+		if( (0 == video.videoHeight)
+		|| (0 == video.videoWidth)
+		)
+		{
+		video.height = videoDisplay.height;
+		video.width = videoDisplay.width;
+		video.x = 0;
+		video.y = 0;
+		}
+		else
+		{
+		var videoAspect:Number = Number(video.videoWidth) / Number(video.videoHeight);
+		var displayAspect:Number = Number(videoDisplay.width) / Number(videoDisplay.height);
+		var adjustFactor:Number;
+		
+		if(videoAspect >= displayAspect) // video is wider than display
+		{
+		adjustFactor = Number(video.videoWidth) / Number(videoDisplay.width);
+		video.width = videoDisplay.width;
+		video.height = int(Number(video.videoHeight) / adjustFactor);
+		video.x = 0;
+		video.y = int((videoDisplay.height - video.height) / 2);
+		}
+		else
+		{
+		adjustFactor = Number(video.videoHeight) / Number(videoDisplay.height);
+		video.height = videoDisplay.height;
+		video.width = int(Number(video.videoWidth) / adjustFactor);
+		video.x = int((videoDisplay.width - video.width) / 2);
+		video.y = 0;
+		}
+		}
+		}
+		}
+		
+		public function onPlayStatus(info:Object):void {}
+		public function onMetaData(info:Object):void {}
+		public function onCuePoint(info:Object):void {}
+		public function onTextData(info:Object):void {}
+		
+		public function ValidateConnectAllowed(isConnected:Boolean, groupNameText:String):Boolean
+		{
+		return (!isConnected) && (groupNameText.length > 0);
+		}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox left="10" right="10" top="10" bottom="10" verticalGap="6">
+		<mx:HBox width="100%">
+			<mx:Text text="Group:"/>
+			<mx:TextInput id="groupName" width="100%" enabled="{!connected}" text="default"/>
+			<mx:Button label="Connect" click="DoConnect()"
+					   enabled="{ValidateConnectAllowed(connected, groupName.text)}"/>
+			<mx:Button label="Disconnect" click="DoDisconnect()" enabled="{connected}"/>
+		</mx:HBox>
+		<mx:VideoDisplay id="videoDisplay" width="320" height="240" resize="DoResizeVideo()"/>
+		<mx:TextArea id="statusLog" width="100%" height="100%"/>
+		<mx:HBox width="100%">
+			<mx:TextInput id="userName" width="160"/>
+			<mx:TextInput id="chatText" width="100%" enabled="{joinedGroup}" enter="DoPost()"/>
+		</mx:HBox>
+	</mx:VBox>
+	<!--
+	<fx:Script>
+		<![CDATA[
+			private var _phoneNumber:String ="";  
+			// Bind getter function to phoneNumberChanged event  
+			[Bindable(event="phoneNumberChanged")]  
+			public function get phoneNumber():String {  
+				return _phoneNumber;  
+			}  
+			// Setter method.  
+			public function set phoneNumber(value:String):void {  
+				if (value.length<10) {  
+					_phoneNumber = value;  
+				} else {  
+					_phoneNumber = phoneFormatter.format(value);  
+				}  
+				// Create and dispatch event  
+				var eventObj:Event = new Event("phoneNumberChanged");  
+				dispatchEvent(eventObj);  
+			}  
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<mx:PhoneFormatter id="phoneFormatter" formatString="(###) ###-####" />
+	</fx:Declarations>
+	<mx:Panel width="500" height="254" layout="horizontal" paddingBottom=" 10" paddingLeft="20"
+			  paddingRight="10" paddingTop="10" title="Bind with Getters and Setters">  
+		<mx:TextInput id="ti1" change="phoneNumber=ti1.text" maxChars="10" restrict="0-9"/>  
+		<mx:TextInput id="ti2" text="{phoneNumber}" toolTip="sdfgsdfg"/>  
+		<s:TextInput width="160"/>
+	</mx:Panel>  
+	-->
+</s:Application>
