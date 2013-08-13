@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600" applicationComplete="main();">
+	<fx:Script>
+		<![CDATA[
+			import com.vmc.debug.DebugEvent;
+			import com.vmc.player.rtmfp.RtmfpPlayer;
+			import mx.core.UIComponent;
+			
+			
+			var player:RtmfpPlayer = new RtmfpPlayer(480,320);
+			
+			internal function main():void{
+				var ui:UIComponent = new UIComponent();
+				ui.addChild(player);
+				vGroup.addElement(ui);
+			}
+			
+			internal function play():void{
+				player.serverUrl = "rtmfp://10.0.12.192:1935";
+				player.connect2Peer = peerid.text;
+				player.connectServer();
+				this.addEventListener(DebugEvent.DEBUG_2_PRINT,debugPrint);
+			}
+			
+			function debugPrint(event:DebugEvent){
+				debugTxt.text += event.info;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller x="0" top="30" bottom="151" width="937">
+		<s:VGroup id="vGroup" width="100%" height="100%">
+		</s:VGroup>
+	</s:Scroller>
+	<s:TextArea id="debugTxt" x="0" bottom="0" width="100%" height="150" editable="false"/>
+	<s:TextInput id="peerid" x="10" y="4" width="502" height="22"/>
+	<s:Button x="536" y="4" label="连接" click="play()"/>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</s:Application>
