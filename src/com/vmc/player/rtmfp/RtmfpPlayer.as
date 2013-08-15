@@ -15,6 +15,15 @@ package com.vmc.player.rtmfp
 		private var _connect2Peer:String ="";
 		private var conn:NetConnection;
 		private var stream:NetStream;
+		private var _streamName:String;
+		
+		private var _state:Number = -1;
+		private static const STATE_PLAY:Number = 0;
+		private static const STATE_IDLE:Number = 1;
+		private static const STATE_PAUSE:Number = 2;
+		private static const STATE_BUFFERRING:Number = 3;
+		private static const STATE_CONNECTED:Number = 4;
+		private static const STATE_ERROR:Number = 5;
 		
 		
 		public function RtmfpPlayer(width:int=320, height:int=240)
@@ -22,6 +31,26 @@ package com.vmc.player.rtmfp
 			super(width, height);
 		}
 		
+		public function get streamName():String
+		{
+			return _streamName;
+		}
+
+		public function set streamName(value:String):void
+		{
+			_streamName = value;
+		}
+
+		public function get state():Number
+		{
+			return _state;
+		}
+
+		public function set state(value:Number):void
+		{
+			_state = value;
+		}
+
 		public function get serverUrl():String
 		{
 			return _serverUrl;
@@ -52,8 +81,10 @@ package com.vmc.player.rtmfp
 		}
 		
 		private function onConnect():void{
+			Logger.info(TAG,"Connect to "+serverUrl+" successfully.");
 			stream = new NetStream(conn, connect2Peer);
 			stream.client = this;
+			this.smoothing = true;
 			stream.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
 			onNetStreamConnect();
 		}
@@ -72,21 +103,31 @@ package com.vmc.player.rtmfp
 		
 		private function onNetStreamConnect():void{
 			this.attachNetStream(stream);
-			stream.play("media");
-			stream.bufferTime = 1.0;
+			stream.play(streamName);
+//			stream.bufferTime = 1.0;
 		}
 		
 		private function onPosting(message:Object):void{
-			Logger.info(TAG,message.user+":"+message.text);
+			Logger.info(TAG,"onPosting---"+message.user+":"+message.text);
 		}
 		
-		private function onMetaData(info:Object):void{
-			Logger.info(TAG,info.toString());
+		private function _onMetaData(info:Object):void{
+			Logger.info(TAG,"_onMetaData---"+info.toString());
+		}
+		
+		public function receiveSomeData(message:String):void{
+			Logger.info(TAG,"receive "+message);
+		}
+		
+		private function doResizeVideo():void{
+			var width:Number = this.videoWidth;
+			var height:Number = this.videoHeight;
+			Logger.info(TAG,"doResizeVideo("+width+","+height+")");
 		}
 		
 		private function netStatusHandler(e:NetStatusEvent):void
 		{
-			Logger.info(TAG,"netStatus: " + e.info.code + "\n");
+			Logger.info(TAG,"netStatus: " + e.info.code);
 			switch(e.info.code)
 			{
 				case "NetConnection.Connect.Success":
@@ -125,7 +166,7 @@ package com.vmc.player.rtmfp
 				
 				case "NetStream.MulticastStream.Reset":
 				case "NetStream.Buffer.Full":
-//					doResizeVideo();
+					
 					break;
 				
 				case "NetGroup.SendTo.Notify": 
@@ -133,11 +174,17 @@ package com.vmc.player.rtmfp
 				case "NetGroup.Neighbor.Connect": 
 				case "NetGroup.Neighbor.Disconnect":
 				case "NetGroup.MulticastStream.PublishNotify": 
+					onNetStreamConnect();
+					break;
+				
 				case "NetGroup.MulticastStream.UnpublishNotify": 
 				case "NetGroup.Replication.Fetch.SendNotify": 
 				case "NetGroup.Replication.Fetch.Failed": 
 				case "NetGroup.Replication.Fetch.Result": 
 				case "NetGroup.Replication.Request": 
+				case "NetStream.Video.DimensionChange":
+					doResizeVideo();
+					break;
 				default:
 					break;
 			}

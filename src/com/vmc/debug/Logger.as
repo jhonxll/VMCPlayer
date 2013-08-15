@@ -33,5 +33,9 @@ package com.vmc.debug
 			de.info = tag+"   "+message;
 			logger.dispatchEvent(de);
 		}
+		
+		public static function callback(func:Function):void{
+			logger.addEventListener(DebugEvent.DEBUG_2_PRINT,func);
+		}
 	}
 }
