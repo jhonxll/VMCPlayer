@@ -8,8 +8,9 @@
 			import com.vmc.debug.DebugEvent;
 			import com.vmc.debug.Logger;
 			import com.vmc.player.rtmfp.RtmfpPlayer;
+			import com.vmc.player.rtmfp.RtmpfpVideoDisplay;
 			import com.vmc.ui.VideoAreaButton;
-			
+			import mx.controls.Alert;
 			import mx.core.UIComponent;
 			
 			
@@ -24,17 +25,14 @@
 				ui.addChild(player);
 				vGroup.addElement(ui);
 				var btn:VideoAreaButton = new VideoAreaButton();
-				Logger.info("TEST","btn.size=("+btn.width+","+btn.height+")");
 				btn.percentWidth = 100;
 				btn.percentHeight = 100;
-				Logger.info("1TEST","btn.size=("+btn.width+","+btn.height+")");
 				vGroup.addElement(btn);
 				
-				var ppimg:Image = new Image();
-				ppimg.source=LocatePoint;
-				ppimg.scaleX = 0.5;
-				ppimg.scaleY = 0.5;
-				vGroup.addElement(ppimg);
+				var rtmfpvd:RtmpfpVideoDisplay = new RtmpfpVideoDisplay();
+				rtmfpvd.percentWidth = 100;
+				rtmfpvd.percentHeight = 100;
+				vGroup.addElement(rtmfpvd);
 			}
 			
 			internal function play():void{
@@ -43,7 +41,10 @@
 				player.streamName = "media";
 				player.connectServer();
 				Logger.callback(debugPrint);
+				Alert.show("today is friday");
 			}
+			
+			
 			
 			function debugPrint(event:DebugEvent){
 				debugTxt.text += event.info+ "\n";
@@ -51,9 +52,9 @@
 			
 		]]>
 	</fx:Script>
-		<s:BorderContainer id="vGroup" width="100%" height="100%">
-			<s:Image width="94" height="81" source="@Embed('../../../../../../assets/images/play.png')"/>
-		</s:BorderContainer>
+		<s:Group id="vGroup" width="600" height="600">
+			<s:Image source="{LocatePoint}"/>
+		</s:Group>
 	<s:TextArea id="debugTxt" x="0" bottom="0" width="100%" height="150" editable="false"/>
 	<s:TextInput id="peerid" x="10" y="4" width="502" height="22"/>
 	<s:Button x="536" y="4" label="连接" click="play()"/>
