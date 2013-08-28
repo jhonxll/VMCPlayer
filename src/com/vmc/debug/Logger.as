@@ -31,10 +31,13 @@ package com.vmc.debug
 			trace(tag+"   ",message);
 			var de:DebugEvent = new DebugEvent(DebugEvent.DEBUG_2_PRINT);
 			de.info = tag+"   "+message;
+//			de.info += "event="+de.toString();
+//			de.info += "event.target="+de.target;
 			logger.dispatchEvent(de);
 		}
 		
 		public static function callback(func:Function):void{
+//			logger.addEventListener(DebugEvent.DEBUG_2_PRINT,func);
 			logger.addEventListener(DebugEvent.DEBUG_2_PRINT,func);
 		}
 	}

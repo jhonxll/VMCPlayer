@@ -10,38 +10,33 @@
 			import com.vmc.player.rtmfp.RtmfpPlayer;
 			import com.vmc.player.rtmfp.RtmpfpVideoDisplay;
 			import com.vmc.ui.VideoAreaButton;
+			import com.vmc.ui.VmcVideoDisplay;
+			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.UIComponent;
 			
+			import mx.controls.VideoDisplay;
 			
-			var player:RtmfpPlayer = new RtmfpPlayer(480,320);
+			
+//			var player:RtmfpPlayer = new RtmfpPlayer(480,320);
+			var player:VmcVideoDisplay;
 			
 			[Bindable]
-			[Embed('../../../../../../assets/images/pause.png')] 
-			private var LocatePoint:Class;  
+			private var array:ArrayCollection = new ArrayCollection([{id:1,city:"北京"},{id:1,city:"天津"},{id:3,city:"上海"}]);
 			
 			internal function main():void{
-				var ui:UIComponent = new UIComponent();
-				ui.addChild(player);
-				vGroup.addElement(ui);
-				var btn:VideoAreaButton = new VideoAreaButton();
-				btn.percentWidth = 100;
-				btn.percentHeight = 100;
-				vGroup.addElement(btn);
-				
-				var rtmfpvd:RtmpfpVideoDisplay = new RtmpfpVideoDisplay();
-				rtmfpvd.percentWidth = 100;
-				rtmfpvd.percentHeight = 100;
-				vGroup.addElement(rtmfpvd);
+				Logger.callback(debugPrint);
+				devicesList
 			}
 			
 			internal function play():void{
-				player.serverUrl = "rtmfp://10.0.12.192:1935";
-				player.connect2Peer = peerid.text;
-				player.streamName = "media";
-				player.connectServer();
-				Logger.callback(debugPrint);
-				Alert.show("today is friday");
+				var url:String = "rtmfp://10.0.12.192:1935"+"|"+peerid.text+"|"+"media";
+				
+				player = new VmcVideoDisplay();
+				player.percentWidth = 100;
+				player.percentHeight = 100;
+				player.setUrl(url);
+				vGroup.addElement(player);
 			}
 			
 			
@@ -52,12 +47,17 @@
 			
 		]]>
 	</fx:Script>
-		<s:Group id="vGroup" width="600" height="600">
-			<s:Image source="{LocatePoint}"/>
-		</s:Group>
 	<s:TextArea id="debugTxt" x="0" bottom="0" width="100%" height="150" editable="false"/>
 	<s:TextInput id="peerid" x="10" y="4" width="502" height="22"/>
 	<s:Button x="536" y="4" label="连接" click="play()"/>
+	<s:Group id="vGroup" left="247" right="10" bottom="155" height="415">
+		
+	</s:Group>
+	<s:List id="devicesList" width="232" left="10" bottom="155" height="415" dataProvider="{array}"></s:List>
+	<!--
+	<s:Button x="624" y="4" label="play" click="player.play()"/>
+	<s:Button x="712" y="4" label="pause" click="player.pause()"/>
+	-->
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>

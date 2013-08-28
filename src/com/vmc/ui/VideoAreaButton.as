@@ -39,6 +39,7 @@ package com.vmc.ui
 		public function set state(value:Number):void
 		{
 			_state = value;
+			this.invalidateDisplayList();
 		}
 		
 		override protected function commitProperties():void
@@ -46,6 +47,13 @@ package com.vmc.ui
 			// TODO Auto Generated method stub
 			super.commitProperties();
 			
+		}
+		
+		public function show(en:Boolean):void{
+			if(this.visible != en){
+				this.visible = en;
+			}
+			this.invalidateDisplayList();
 		}
 		
 		override protected function createChildren():void
@@ -74,7 +82,7 @@ package com.vmc.ui
 			super.updateDisplayList(unscaledWidth, unscaledHeight);
 			
 			graphics.clear();
-			graphics.beginFill(0xff0000, 0.5);
+			graphics.beginFill(0x000000, 0.2);
 			graphics.drawRect(0, 0, unscaledWidth, unscaledWidth);
 			
 			var image:Image
@@ -89,11 +97,7 @@ package com.vmc.ui
 				imgPause.visible = true;
 			}
 			
-			
-			Logger.info(TAG,"button.size=("+image.width+","+image.height+")");
-			image.setActualSize(256,256);
-			
-			Logger.info(TAG,"button.size1=("+image.width+","+image.height+")");
+			image.setActualSize(128,128);
 			image.x = (unscaledWidth - image.width)/2;
 			image.y = (unscaledHeight - image.height)/2;
 		}

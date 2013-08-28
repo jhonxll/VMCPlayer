@@ -1,4 +1,4 @@
-package com.vmc.player.rtmfp
+package com.vmc
 {
 	public class MonitorDevice
 	{
@@ -6,6 +6,7 @@ package com.vmc.player.rtmfp
 		public deviceName:String = "";
 		public macAddress:String = "";
 		public peerID:String = "";
+		public liveUrl:String = "";
 		
 		public function MonitorDevice()
 		{

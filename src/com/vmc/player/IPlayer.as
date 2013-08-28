@@ -10,11 +10,15 @@ package com.vmc.player
 //		public static const EVENT_PLAYER_SETVOLUME:String = "setvolume";
 //		public static const EVENT_PLAYER_MUTE:String = "mute";
 		
+		function setUrl(url:String):void;
+		
 		function start():void;
 		
 		function seek(time:Number):void;
 		
 		function pause():void;
+		
+		function play():void;
 		
 		function stop():void;
 		
@@ -23,5 +27,9 @@ package com.vmc.player
 		function setVolume(volume:int):void;
 		
 		function mute(yes:Boolean):void;
+		
+		function setAutoPlay(auto:Boolean):void;
+		
+		function isPlaying():Boolean;
 	}
 }
